@@ -1,0 +1,15 @@
+input_data_file: 'data/coinbase_hourly.csv'
+reward_strategy: 'sortino'
+numTrainingIterations: 10
+numMiniBatchesPerUpdate: 1
+tensorLog: './tensorboard'
+model_params: {
+  'n_steps': 243,
+  'gamma': 0.94715,
+  'learning_rate': 0.00157,
+  'ent_coef': 2.29869,
+  'cliprange':  0.38388,
+  'noptepochs': 35,
+  'lam': 0.89837,
+}
+
