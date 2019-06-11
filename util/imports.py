@@ -1,6 +1,8 @@
 import yaml
 import pandas as pd
 from util.indicators import add_indicators
+from stable_baselines import A2C, ACKTR, PPO2
+from stable_baselines.common.policies import MlpLnLstmPolicy, MlpPolicy
 
 
 def getConfiguration(configFile="config.yaml"):
@@ -20,6 +22,7 @@ def getConfiguration(configFile="config.yaml"):
 def getDatasets(inputfile, testPercentage=15, valPercentage=15, percentageToUse=100):
     df = pd.read_csv(inputfile)
     df = df.drop(['Symbol'], axis=1)
+    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d %I-%p')    # parse date from string to the correct format
     df = df.sort_values(['Date'])
     df = add_indicators(df.reset_index())
 
@@ -36,3 +39,32 @@ def getDatasets(inputfile, testPercentage=15, valPercentage=15, percentageToUse=
     test_df = df[train_len+val_len:]
 
     return train_df, val_df, test_df
+
+def selectFunctionAccordingToParams(type, param):
+    if type == 'model':
+        if param == 'ppo2':
+            """
+            PPO2:
+                The Proximal Policy Optimization algorithm combines ideas from A2C (having multiple workers) and TRPO 
+                (it uses a trust region to improve the actor).
+           """
+            return PPO2
+        elif param == 'a2c':
+            return A2C
+        else:
+            print('> Error, unsupported params')
+            return None
+
+    elif type == 'policy':
+        if param == 'mlp':
+            return MlpPolicy
+
+        if param == 'lstm':
+            """ MlpLnLstmPolicy: 
+                Policy object that implements actor critic, using a layer normalized LSTMs with a MLP feature extraction.
+            """
+            return MlpLnLstmPolicy
+    else:
+        print('> Error, unsupported  type')
+
+

@@ -11,17 +11,17 @@ from empyrical import sortino_ratio, calmar_ratio, omega_ratio
 
 """
     Future Work:
-        - Stop when certain profit/loss achieved or is that useless for when training?
+        - Stop when certain profit/loss achieved or is that useless for when training ?
 """
 class BitcoinTradingEnv(gym.Env):
 
-    def __init__(self, df, initialFunds=10000, commission=0.0025, rewardType='sortino', forecastLength=10,
+    def __init__(self, df, reward_func='sortino', initialFunds=10000, commission=0.0025, forecastLength=10,
                  confidenceInterval=0.95, scaler=preprocessing.MinMaxScaler()):
         """
         :param df:
-        :param initialwallet: Initial resources the agent holds in USD.
+        :param reward_func:   Risk-adjusted return metric to be used.   # Obligatory argument for gym.Env
+        :param initialFunds: Initial resources the agent holds in USD.
         :param commission: Commission the "middleman" takes per transaction.
-        :param rewardType:   Risk-adjusted return metric to be used.
         :param forecastLength:
         :param confidenceInterval:
         :param scaler: Function to rescale data, default=minMaxScaler to normalize
@@ -30,7 +30,7 @@ class BitcoinTradingEnv(gym.Env):
         # Set constant values, and functions to use throughout
         self.initialFunds = initialFunds
         self.commission = commission
-        self.rewardType = rewardType    # ['sortino', 'calmar', 'omega', 'dummy']
+        self.reward_func = reward_func    # ['sortino', 'calmar', 'omega', 'dummy']
         self.forecastLength = forecastLength
         self.confidenceInterval = confidenceInterval
         self.scaler = scaler
@@ -45,7 +45,6 @@ class BitcoinTradingEnv(gym.Env):
         self.stacionaryDf = log_and_difference(self.df,
                                ['Open', 'High', 'Low', 'Close', 'Volume BTC', 'Volume USD'])
 
-
         # Agent spaces definition
         self.action_space = spaces.MultiDiscrete([3, 10])    # spaces.Discrete(12)         # fixme - not being done by the current model on github
         self.obsShape = (1, 5 + len(self.df.columns) - 2 + (self.forecastLength * 3))     # fixme - why the 5 -2 ...
@@ -55,30 +54,30 @@ class BitcoinTradingEnv(gym.Env):
         # A box in R^n with an identical bound for each dimension
         self.observation_space = spaces.Box(low=0, high=1, shape=self.obsShape, dtype=np.float16)
 
-        print('> Finished init ')
+        # print('> Finished init ')
 
     def reset(self):
         """
-                    Reset gym environment to base values
+                Reset gym environment to base values
                 :return: first observation
         """
 
-        print('> In reset')
+        # print('> In reset')
 
         # Initialize empty variables
         self.wallet = self.initialFunds                      # Agent's nº of USD
         self.btcWallet = 0                                   # Agent's nº of Bitcoin
-        self.worthHistory = [self.wallet+self.btcWallet]     # History
+        self.iterator = self.forecastLength                  # Timestamp, we cannot start our ts at t=0 because of forecast
+        self.worthHistory = [self.wallet+self.btcWallet*self._getCurrentPrice()]     # History
         
-        self.iterator = self.forecastLength        # Timestamp, we cannot start our ts at t=0 because of forecast
-        
+
         self.tradeHistory = []
         """
             Array of: {
                 'step': iterator value (timestamp)
+                'type': 'sell' || 'buy'
                 'amount': nº of bitcoin 
                 'total': nº of bitcoin * amount,
-                'type': 'sell' || 'buy'
                 }
         """
 
@@ -89,7 +88,8 @@ class BitcoinTradingEnv(gym.Env):
             [0],    # BTC sold
             [0]     # BTC sold * price
         ])
-        print('> Finished reset ')
+
+        # print('> Finished reset ')
 
         return self._getNextObs()
     """
@@ -101,7 +101,7 @@ class BitcoinTradingEnv(gym.Env):
         :param action[actionID, amount]
         :return: new observation, reward of action took, whether the agent's finished, <nothing>
         """
-        print('> In step')
+        # print('> In step')
         self._takeNewAction(action)
         self.iterator += 1
 
@@ -110,9 +110,9 @@ class BitcoinTradingEnv(gym.Env):
 
         finished = self.worthHistory[-1] < self.initialFunds / 10 or self.iterator == len(self.df) - self.forecastLength-1
 
-        print('Finished step')
-
-        return obs, reward, finished, {}    # fixme - {} ??
+        # print('Finished step')
+        # print(self.worthHistory)
+        return obs, reward, finished, self.worthHistory
 
     def render(self):
         pass
@@ -125,7 +125,7 @@ class BitcoinTradingEnv(gym.Env):
             :return:    ????
         """
 
-        print('> In _getNextObs ')
+        # print('> In _getNextObs ')
 
         # Isolate important features
         features = self.stacionaryDf[self.stacionaryDf.columns.difference(['index', 'Date'])]
@@ -159,7 +159,7 @@ class BitcoinTradingEnv(gym.Env):
         obs = np.reshape(obs.astype('float16'), self.obsShape)
         obs[np.bitwise_not(np.isfinite(obs))] = 0
 
-        print('> Finished getNextObs ')
+        # print('> Finished getNextObs ')
 
         return obs
 
@@ -168,7 +168,7 @@ class BitcoinTradingEnv(gym.Env):
         :param action[actionID, amount]
         """
 
-        print('> In _takeNewAction ')
+        # print('> In _takeNewAction ')
 
         actionType = action[0]      # 0=Buy, 1=Sell, 2=Hold
         amount = action[1] / 10
@@ -209,6 +209,7 @@ class BitcoinTradingEnv(gym.Env):
                 })
 
         self.worthHistory.append(self.wallet + self.btcWallet * currentPrice)
+        # print(self.worthHistory)
 
         self.accountHistory = np.append(self.accountHistory, [
             [self.wallet],
@@ -218,7 +219,7 @@ class BitcoinTradingEnv(gym.Env):
             [sales]
         ], axis=1)
 
-        print('> Finished _takeNewAction ')
+        # print('> Finished _takeNewAction ')
 
     def _getReward(self):
         """
@@ -228,7 +229,7 @@ class BitcoinTradingEnv(gym.Env):
             :return: Reward value
         """
 
-        print('> In _getReward ')
+        # print('> In _getReward ')
 
         hoursInAYear = 365*24
         length = (self.iterator-self.forecastLength if self.iterator < self.forecastLength else self.forecastLength)
@@ -241,13 +242,13 @@ class BitcoinTradingEnv(gym.Env):
             return 0
 
         # Calculate rewards according to the chosen strategy.
-        if self.rewardType in ['sortino', 'calmar', 'omega']:
-            reward = self.strategies[self.rewardType](worthEvolution, annualization=hoursInAYear)
-        elif self.rewardType is 'dummy':
+        if self.reward_func in ['sortino', 'calmar', 'omega']:
+            reward = self.strategies[self.reward_func](worthEvolution, annualization=hoursInAYear)
+        elif self.reward_func is 'dummy':
             # Simple strategy where the reward is the last variation in worth.
             reward = worthEvolution[-1]
 
-        print('> Finished _getReward ')
+        # print('> Finished _getReward ')
 
         # Avoid errors
         return reward if np.isfinite(reward) else 0
