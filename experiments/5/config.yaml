@@ -1,0 +1,15 @@
+reward_strategy: 'dummy'
+model: 'ppo2'
+policy: 'lstm'
+model_params: {
+  'n_steps': 243,
+  'gamma': 0.94715,
+  'learning_rate': 0.00157,
+  'ent_coef': 2.29869,
+  'cliprange':  0.38388,
+  'noptepochs': 35,
+  'lam': 0.89837,
+}
+numTrainingIterations: 7
+numMiniBatchesPerUpdate: 1
+forecast_len: 4

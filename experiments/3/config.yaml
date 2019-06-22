@@ -1,0 +1,18 @@
+reward_strategy: 'omega'
+model: 'ppo2'
+policy: 'lstm'
+numTrainingIterations: 7
+numMiniBatchesPerUpdate: 1
+model_params: {
+ 'cliprange': 0.24459328978411837,
+ 'ent_coef': 0.027326192405747952,
+ 'gamma': 0.950470738014891,
+ 'lam': 0.9475367647108637,
+ 'learning_rate': 0.0004360742524710917,
+ 'n_steps': 179,
+ 'noptepochs': 7
+}
+'confidence_interval': 0.8755049470318887
+'forecast_len': 2
+
+
