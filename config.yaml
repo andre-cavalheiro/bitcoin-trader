@@ -1,5 +1,5 @@
 input_data_file: 'data/coinbase_hourly.csv'
 testMainDir: 'experiments'
-testSubDirs: ['1','5']
-dataset_percentage: 20 
-savingModelInterval: 3
+testSubDirs: ['1']
+dataset_percentage: 100
+savingModelInterval: 1

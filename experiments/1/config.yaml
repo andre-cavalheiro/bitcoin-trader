@@ -1,16 +1,16 @@
 reward_strategy: 'sortino'
 model: 'ppo2'
 policy: 'lstm'
+numTrainingIterations: 7
+numMiniBatchesPerUpdate: 1
+forecast_len: 5
+confidence_interval: 0.8100538836579667
 model_params: {
 'cliprange': 0.3838833398771404,
  'ent_coef': 2.2986983190512612e-06,
  'gamma': 0.9471575125156161,
  'lam': 0.8983738705323411,
  'learning_rate': 0.0015741188587479822,
- 'n_steps': 243.43124303268107,
- 'noptepochs': 35.778727741355404}
+ 'n_steps': 243,
+ 'noptepochs': 36
 }
-numTrainingIterations: 7
-numMiniBatchesPerUpdate: 1
-'forecast_len': 4.730444664178924
-'confidence_interval': 0.8100538836579667

@@ -14,7 +14,7 @@ def objective(trial):
         'forecast_len': int(trial.suggest_loguniform('forecast_len', 1, 200)),
         'confidence_interval': trial.suggest_uniform('confidence_interval', 0.7, 0.99),
     }
-    train_df, test_df = getDatasets(params.get('input_data_file'), percentageToUse=100)
+    train_df, test_df = getDatasets(params.get('input_data_file'), percentageToUse=params.get('dataset_percentage'))
     trainEnv = DummyVecEnv([lambda: BitcoinTradingEnv(train_df, **envParams)])
     testEnv = DummyVecEnv([lambda: BitcoinTradingEnv(test_df, **envParams)])
 
@@ -84,7 +84,7 @@ print('> Outputting best trial params to {}'.format(output_file))
 bestBoy = study.best_trial
 
 with open(output_file, 'w') as outfile:
-    json.dump(bestBoy, outfile)
+    json.dump(bestBoy.params, outfile)
 
 print('Best value: ', bestBoy.value)
 
